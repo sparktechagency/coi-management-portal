@@ -26,6 +26,10 @@ async function main() {
   console.log('--- ALL CERTS ---');
   const { data: certs } = await supabase.from('certificates').select('*');
   console.log(certs);
+
+  console.log('--- ALL ACTIVITIES ---');
+  const { data: acts } = await supabase.from('activities').select('*');
+  console.log(acts);
 }
 
 main();

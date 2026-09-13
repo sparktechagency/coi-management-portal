@@ -2,7 +2,7 @@
 
 import React, { useState } from 'react';
 import Link from 'next/link';
-import { FileText, Eye, Edit3, Download, Check, Mail } from 'lucide-react';
+import { FileText, Eye, Edit3, Download, Check, Mail, Loader2 } from 'lucide-react';
 import { Certificate } from '@/types';
 import { Card } from '@/components/shared/Card';
 import { Badge } from '@/components/shared/Badge';
@@ -14,23 +14,35 @@ interface CertificateSummaryCardProps {
 }
 
 export const CertificateSummaryCard: React.FC<CertificateSummaryCardProps> = ({ certificate }) => {
+  const [downloading, setDownloading] = useState(false);
   const [downloaded, setDownloaded] = useState(false);
   const [isEmailModalOpen, setIsEmailModalOpen] = useState(false);
 
-  const handleDownload = () => {
-    setDownloaded(true);
-    // Create a mock download link
-    const element = document.createElement('a');
-    const file = new Blob([
-      `CERTIFICATE OF LIABILITY INSURANCE (ACORD 25)\nCertificate Number: ${certificate.certificateNumber}\nInsured: ${certificate.insuredName}\nCertificate Holder: ${certificate.certificateHolderName} (${certificate.certificateHolderAddress})\nCertificate Date: ${certificate.certificateDate}\nAdditional Insured: ${certificate.additionalInsured ? 'Yes' : 'No'}\nStatus: ${certificate.status.toUpperCase()}\nIssued By: The Ewing Agency Inc.`
-    ], { type: 'text/plain' });
-    element.href = URL.createObjectURL(file);
-    element.download = `${certificate.certificateNumber}_Certificate.txt`;
-    document.body.appendChild(element);
-    element.click();
-    document.body.removeChild(element);
+  const handleDownload = async () => {
+    try {
+      setDownloading(true);
+      const res = await fetch(`/api/portal/certificate/${certificate.id}/download`);
+      if (!res.ok) {
+        throw new Error('Failed to download certificate PDF');
+      }
+      const blob = await res.blob();
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `${(certificate.certificateNumber || 'Certificate').replace(/[^a-zA-Z0-9_-]/g, '_')}.pdf`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(url);
 
-    setTimeout(() => setDownloaded(false), 3000);
+      setDownloaded(true);
+      setTimeout(() => setDownloaded(false), 3000);
+    } catch (err) {
+      console.error('Download error:', err);
+      alert('Unable to download PDF. Please try again.');
+    } finally {
+      setDownloading(false);
+    }
   };
 
   return (
@@ -118,10 +130,19 @@ export const CertificateSummaryCard: React.FC<CertificateSummaryCardProps> = ({ 
         <Button
           variant="outline"
           fullWidth
+          disabled={downloading}
           onClick={handleDownload}
-          icon={downloaded ? <Check className="w-4 h-4 text-emerald-600" /> : <Download className="w-4 h-4 text-slate-600" />}
+          icon={
+            downloading ? (
+              <Loader2 className="w-4 h-4 text-slate-600 animate-spin" />
+            ) : downloaded ? (
+              <Check className="w-4 h-4 text-emerald-600" />
+            ) : (
+              <Download className="w-4 h-4 text-slate-600" />
+            )
+          }
         >
-          {downloaded ? 'Downloaded!' : 'Download'}
+          {downloading ? 'Downloading...' : downloaded ? 'Downloaded!' : 'Download'}
         </Button>
       </div>
 

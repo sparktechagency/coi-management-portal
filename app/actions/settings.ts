@@ -1,9 +1,67 @@
 'use server';
 
-import { createServerSupabaseClient } from '@/lib/supabase/server';
+import { createServerSupabaseClient, createAdminSupabaseClient } from '@/lib/supabase/server';
 import { revalidatePath } from 'next/cache';
 
-// PROFILE ACTIONS
+// CLIENT PORTAL PROFILE ACTIONS
+export async function updateClientProfileAction(formData: FormData) {
+  const supabase = await createServerSupabaseClient();
+  const { data: { user } } = await supabase.auth.getUser();
+
+  if (!user) return { error: 'Unauthorized' };
+
+  const fullName = (formData.get('fullName') as string)?.trim();
+  const phone = (formData.get('phone') as string)?.trim() || '';
+  const address = (formData.get('address') as string)?.trim() || '';
+
+  if (!fullName) return { error: 'Please enter your name.' };
+
+  const initials = fullName
+    .split(/\s+/)
+    .map((n) => n[0])
+    .join('')
+    .substring(0, 2)
+    .toUpperCase() || 'CL';
+
+  // Update Auth user metadata
+  await supabase.auth.updateUser({
+    data: { full_name: fullName, name: fullName },
+  });
+
+  // Fetch client_id from user_profiles
+  const { data: profile } = await supabase
+    .from('user_profiles')
+    .select('client_id')
+    .eq('id', user.id)
+    .single();
+
+  const adminSupabase = await createAdminSupabaseClient();
+
+  // Update user_profiles initials
+  await adminSupabase
+    .from('user_profiles')
+    .update({ avatar_initials: initials })
+    .eq('id', user.id);
+
+  // If linked to a client row, update client row
+  if (profile?.client_id) {
+    await adminSupabase
+      .from('clients')
+      .update({
+        contact_name: fullName,
+        phone: phone,
+        address: address,
+        avatar_initials: initials,
+      })
+      .eq('id', profile.client_id);
+  }
+
+  revalidatePath('/portal/account');
+  revalidatePath('/portal');
+  return { success: true, initials };
+}
+
+// ADMIN PROFILE ACTIONS
 export async function updateProfileAction(formData: FormData) {
   const supabase = await createServerSupabaseClient();
   const { data: { user } } = await supabase.auth.getUser();

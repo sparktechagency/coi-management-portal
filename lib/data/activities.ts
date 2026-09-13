@@ -16,6 +16,7 @@ function mapRow(row: Record<string, unknown>): Activity {
           month: 'short', day: 'numeric', year: 'numeric',
         })
       : '',
+    certificateId: (row.certificate_id as string) || null,
   };
 }
 

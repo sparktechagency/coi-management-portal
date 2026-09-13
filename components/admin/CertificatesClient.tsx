@@ -7,6 +7,7 @@ import { Button } from '@/components/shared/Button';
 import { Card } from '@/components/shared/Card';
 import { Certificate, Client } from '@/types';
 import { deleteCertificateAction } from '@/app/actions/certificates';
+import { EmailCertificateModal, EmailModalCertificate } from '@/components/admin/EmailCertificateModal';
 
 interface CertificatesClientProps {
   initialCertificates: Certificate[];
@@ -20,7 +21,8 @@ export function CertificatesClient({ initialCertificates, clientsList }: Certifi
   // Modals state
   const [showUploadModal, setShowUploadModal] = useState(false);
   const [showSuccessUploadModal, setShowSuccessUploadModal] = useState(false);
-  const [showSuccessEmailModal, setShowSuccessEmailModal] = useState(false);
+  const [emailModalCert, setEmailModalCert] = useState<EmailModalCertificate | null>(null);
+  const [toastMessage, setToastMessage] = useState('');
   const [uploading, setUploading] = useState(false);
   const [uploadError, setUploadError] = useState<string | null>(null);
 
@@ -87,8 +89,15 @@ export function CertificatesClient({ initialCertificates, clientsList }: Certifi
     }
   };
 
-  const handleTriggerEmail = () => {
-    setShowSuccessEmailModal(true);
+  const handleOpenEmailModal = (cert: Certificate) => {
+    const client = clientsList.find((c) => c.id === cert.clientId);
+    setEmailModalCert({
+      id: cert.id,
+      policyType: cert.policyType,
+      certificateNumber: cert.certificateNumber,
+      clientName: cert.insuredName,
+      recipientEmail: client?.contactEmail || '',
+    });
   };
 
   const handleDelete = async (certificateId: string) => {
@@ -111,6 +120,13 @@ export function CertificatesClient({ initialCertificates, clientsList }: Certifi
 
   return (
     <div className="flex-1 flex flex-col min-h-screen">
+      {/* Toast Notification */}
+      {toastMessage && (
+        <div className="fixed top-5 right-5 z-50 bg-slate-900 text-white px-4 py-3 rounded-lg shadow-xl text-xs font-semibold animate-bounce">
+          {toastMessage}
+        </div>
+      )}
+
       <header className="bg-white border-b border-slate-200/80 px-6 lg:px-8 py-4">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div>
@@ -193,7 +209,7 @@ export function CertificatesClient({ initialCertificates, clientsList }: Certifi
                           View
                         </Link>
                         <button
-                          onClick={handleTriggerEmail}
+                          onClick={() => handleOpenEmailModal(cert)}
                           className="text-xs font-semibold text-slate-500 hover:text-slate-800 hover:underline transition-colors cursor-pointer"
                         >
                           Email
@@ -379,29 +395,16 @@ export function CertificatesClient({ initialCertificates, clientsList }: Certifi
         </div>
       )}
 
-      {showSuccessEmailModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs">
-          <div className="bg-white rounded-2xl shadow-2xl border border-slate-200/90 w-full max-w-sm p-6 text-center animate-in fade-in zoom-in-95 flex flex-col items-center">
-            <h3 className="text-lg font-bold text-slate-900 mb-2">
-              Certificate Emailed Successfully
-            </h3>
-
-            <p className="text-xs text-slate-500 leading-relaxed mb-6">
-              The certificate has been successfully emailed to the certificate holder.
-            </p>
-
-            <Button
-              type="button"
-              variant="primary"
-              size="md"
-              onClick={() => setShowSuccessEmailModal(false)}
-              className="bg-[#0e2a47] hover:bg-[#0a1e33] text-white px-8 py-2.5 rounded-xl font-bold text-xs"
-            >
-              OK
-            </Button>
-          </div>
-        </div>
-      )}
+      {/* Email Certificate Modal */}
+      <EmailCertificateModal
+        isOpen={Boolean(emailModalCert)}
+        certificate={emailModalCert}
+        onClose={() => setEmailModalCert(null)}
+        onSuccess={(sentEmail) => {
+          setToastMessage(`Certificate "${emailModalCert?.policyType}" successfully emailed to ${sentEmail}!`);
+          setTimeout(() => setToastMessage(''), 4500);
+        }}
+      />
     </div>
   );
 }

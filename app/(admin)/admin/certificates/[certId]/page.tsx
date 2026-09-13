@@ -6,13 +6,14 @@ import { useRouter } from 'next/navigation';
 import { ChevronRight, Mail, Download, Loader2, AlertCircle } from 'lucide-react';
 import { Button } from '@/components/shared/Button';
 import { Card } from '@/components/shared/Card';
-import { INITIAL_CERTIFICATES } from '@/lib/mockData';
+import { EmailCertificateModal } from '@/components/admin/EmailCertificateModal';
 
 export default function AdminCertificateDetailPage({ params }: { params: Promise<{ certId: string }> }) {
   const router = useRouter();
   const resolvedParams = use(params);
   const certId = resolvedParams.certId;
-  const [showSuccessEmailModal, setShowSuccessEmailModal] = useState(false);
+  const [showEmailModal, setShowEmailModal] = useState(false);
+  const [toastMessage, setToastMessage] = useState('');
   const [cert, setCert] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [pdfUrl, setPdfUrl] = useState<string | null>(null);
@@ -47,11 +48,24 @@ export default function AdminCertificateDetailPage({ params }: { params: Promise
   }
 
   const handleDownload = () => {
-    alert(`Downloading ${cert.policy_type || cert.policyType}.pdf...`);
+    const downloadUrl = `/api/admin/certificates/${certId}/pdf`;
+    const link = document.createElement('a');
+    link.href = downloadUrl;
+    link.download = `${(cert.policyType || cert.policy_type || 'Certificate').replace(/[^a-zA-Z0-9_-]/g, '_')}.pdf`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
   };
 
   return (
     <div className="flex-1 flex flex-col min-h-screen">
+      {/* Toast Notification */}
+      {toastMessage && (
+        <div className="fixed top-5 right-5 z-50 bg-slate-900 text-white px-4 py-3 rounded-lg shadow-xl text-xs font-semibold animate-bounce">
+          {toastMessage}
+        </div>
+      )}
+
       {/* Top Header Bar & Actions matching Image 4 */}
       <header className="bg-white border-b border-slate-200/80 px-6 lg:px-8 py-4">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
@@ -80,7 +94,7 @@ export default function AdminCertificateDetailPage({ params }: { params: Promise
               variant="outline"
               size="md"
               icon={<Mail className="w-3.5 h-3.5 text-slate-700" />}
-              onClick={() => setShowSuccessEmailModal(true)}
+              onClick={() => setShowEmailModal(true)}
               className="bg-white border-slate-300 text-slate-700 font-semibold px-4 rounded-lg text-xs"
             >
               Email
@@ -177,30 +191,22 @@ export default function AdminCertificateDetailPage({ params }: { params: Promise
         </div>
       </main>
 
-      {/* Certificate Emailed Success Modal matching Image 5 */}
-      {showSuccessEmailModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs">
-          <div className="bg-white rounded-2xl shadow-2xl border border-slate-200/90 w-full max-w-sm p-6 text-center animate-in fade-in zoom-in-95 flex flex-col items-center">
-            <h3 className="text-lg font-bold text-slate-900 mb-2">
-              Certificate Emailed Successfully
-            </h3>
-
-            <p className="text-xs text-slate-500 leading-relaxed mb-6">
-              The certificate has been successfully emailed to the certificate holder.
-            </p>
-
-            <Button
-              type="button"
-              variant="primary"
-              size="md"
-              onClick={() => setShowSuccessEmailModal(false)}
-              className="bg-[#0e2a47] hover:bg-[#0a1e33] text-white px-8 py-2.5 rounded-xl font-bold text-xs"
-            >
-              OK
-            </Button>
-          </div>
-        </div>
-      )}
+      {/* Email Certificate Modal */}
+      <EmailCertificateModal
+        isOpen={showEmailModal}
+        certificate={{
+          id: cert.id,
+          policyType: cert.policyType,
+          certificateNumber: cert.certificateNumber,
+          insuredName: cert.insuredName,
+          recipientEmail: cert.clientEmail || '',
+        }}
+        onClose={() => setShowEmailModal(false)}
+        onSuccess={(sentEmail) => {
+          setToastMessage(`Certificate successfully emailed to ${sentEmail}!`);
+          setTimeout(() => setToastMessage(''), 4500);
+        }}
+      />
     </div>
   );
 }
