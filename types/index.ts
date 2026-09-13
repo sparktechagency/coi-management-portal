@@ -51,4 +51,6 @@ export type Activity = {
   clientName: string;
   action: 'Certificate uploaded' | 'Certificate downloaded' | 'Certificate updated' | 'Client created';
   date: string;
+  certificateId?: string | null;
 };
+

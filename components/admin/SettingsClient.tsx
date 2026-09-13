@@ -55,7 +55,7 @@ export function SettingsClient({
       const formData = new FormData();
       formData.append('fullName', fullName);
       formData.append('emailAddress', emailAddress);
-      
+
       const res = await updateProfileAction(formData);
       if (res.error) {
         setProfileToast(`Error: ${res.error}`);
@@ -69,7 +69,7 @@ export function SettingsClient({
   const handleUpdatePassword = (e: React.FormEvent) => {
     e.preventDefault();
     setSecurityError('');
-    
+
     if (newPassword !== confirmPassword) {
       setSecurityError('New passwords do not match!');
       return;
@@ -78,7 +78,7 @@ export function SettingsClient({
     startSecurityTransition(async () => {
       const formData = new FormData();
       formData.append('newPassword', newPassword);
-      
+
       const res = await updatePasswordAction(formData);
       if (res.error) {
         setSecurityError(res.error);
@@ -134,7 +134,7 @@ export function SettingsClient({
 
       <main className="flex-1 p-6 lg:p-8 space-y-6 w-full">
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 items-start">
-          
+
           {/* Profile Card */}
           <Card className="p-6 sm:p-8 border-slate-200 space-y-6">
             <div className="flex items-center gap-3">
@@ -192,9 +192,9 @@ export function SettingsClient({
                   value={emailAddress}
                   onChange={(e) => setEmailAddress(e.target.value)}
                   required
+                  disabled
                   className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm font-medium text-slate-900 focus:outline-none focus:ring-2 focus:ring-[#0e2a47]"
                 />
-                <p className="text-[10px] text-slate-400 mt-1">If you change your email, a confirmation link will be sent.</p>
               </div>
 
               <div className="pt-2">

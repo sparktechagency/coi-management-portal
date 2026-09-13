@@ -36,6 +36,8 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
       fileSize: cert.file_size || '1.2 MB',
       templateStoragePath: cert.template_storage_path,
       descriptionOfOperations: cert.description_of_operations,
+      clientEmail: cert.client?.contact_email || '',
+      clientContactName: cert.client?.contact_name || '',
     };
 
     return NextResponse.json(mappedCert);

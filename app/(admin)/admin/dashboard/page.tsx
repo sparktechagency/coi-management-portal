@@ -46,7 +46,17 @@ export default async function AdminDashboardPage() {
     title: a.title,
     clientName: a.client_name,
     action: a.action,
-    date: a.created_at,
+    date: a.created_at
+      ? new Date(a.created_at).toLocaleDateString('en-US', {
+          month: 'short',
+          day: 'numeric',
+          year: 'numeric',
+        }) + ' • ' + new Date(a.created_at).toLocaleTimeString('en-US', {
+          hour: 'numeric',
+          minute: '2-digit',
+        })
+      : '',
+    certificateId: a.certificate_id || null,
   }));
 
   return (
